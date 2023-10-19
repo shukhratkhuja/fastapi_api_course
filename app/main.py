@@ -9,7 +9,11 @@ import time
 from sqlalchemy.orm import Session
 from . import models, schemas
 from .database import engine, get_db
+from .utils import hash
+
+
 # from requests import Response
+
 
 models.Base.metadata.create_all(bind=engine) 
 
@@ -120,3 +124,16 @@ def update_post (id: int, post: schemas.PostCreate, db: Session = Depends(get_db
         return post_query.first()
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {id} does not exists!")
 
+
+@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    
+    # hash the password - user.password
+    hashed_password = hash(user.password)
+    user.password = hashed_password
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
