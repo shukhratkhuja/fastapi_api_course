@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from .database import engine, get_db
 from .utils import hash
-from .routers import post, user
+from .routers import post, user, auth
 
 # from requests import Response
 
@@ -23,8 +23,8 @@ while True:
     try:
         conn = psycopg2.connect(
             host='localhost', 
-            database='fastapi', 
-            user='postgres', 
+            database='analytic_backup', 
+            user='shukhratkhuja', 
             password='p4stgr2s', 
             cursor_factory=RealDictCursor)
         cursor = conn.cursor()
@@ -38,6 +38,7 @@ while True:
 
 app.include_router(post.router)
 app.include_router(user.router)
+app.include_router(auth.router)
 
 
 @app.get("/") 

@@ -1,7 +1,9 @@
 from .database import Base
+from pydantic import EmailStr
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.sql.expression import text
+
 
 class Post(Base):
     __tablename__ = "posts"
