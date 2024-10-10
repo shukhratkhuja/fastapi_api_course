@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, conint
 from datetime import datetime
 from typing import Optional
 
@@ -23,6 +23,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
     
+
+class Vote(BaseModel):
+    post_id: int
+    dir: conint(le=1) # type: ignore
 
 class PostBase(BaseModel):
     title: str

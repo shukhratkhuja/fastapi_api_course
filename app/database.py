@@ -7,7 +7,6 @@ from psycopg2.extras import RealDictCursor
 from .config import settings
 
 SQLALCHEMY_DB_URL=f"postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}" #echo=True
-print(SQLALCHEMY_DB_URL)
 
 engine = create_engine(SQLALCHEMY_DB_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
