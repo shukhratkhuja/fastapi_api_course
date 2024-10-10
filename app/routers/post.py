@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from .. import models, schemas, oauth2, database
 
 router = APIRouter(
@@ -9,7 +9,7 @@ router = APIRouter(
     tags=["Posts"]
 )
 
-@router.get(path="", response_model=List[schemas.Post])
+@router.get(path="", response_model=List[schemas.PostOut])
 def get_posts(db: Session = Depends(database.get_db),
             current_user: int = Depends(oauth2.get_current_user),
             limit: int = 10,
@@ -17,13 +17,23 @@ def get_posts(db: Session = Depends(database.get_db),
             search: Optional[str] = "" # type: ignore
             ):
 
-    posts = db.query(models.Post).filter(
-        or_(models.Post.title.ilike(f"%{search}%"),
-            models.Post.content.ilike(f"%{search}%")
-            )
-        ).limit(limit).offset(offset).all() # .filter(models.Post.owner_id == current_user.id).all()
+    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")) \
+                    .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True) \
+                    .group_by(models.Post.id) \
+                    .order_by(models.Post.id) \
+                    .filter(
+                        or_(models.Post.title.ilike(f"%{search}%"),
+                        models.Post.content.ilike(f"%{search}%")
+                        )) \
+                    .limit(limit).offset(offset).all()
+
+    # posts = db.query(models.Post).filter(
+    #     or_(models.Post.title.ilike(f"%{search}%"),
+    #         models.Post.content.ilike(f"%{search}%")
+    #         )
+    #     ).limit(limit).offset(offset).all() # .filter(models.Post.owner_id == current_user.id).all()
     
-    return posts
+    return results
 
 
 @router.post(path="", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
@@ -38,12 +48,17 @@ def create_posts(post: schemas.PostCreate,
 
     return new_post
 
-@router.get("/{id}", response_model=schemas.Post)
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(id:int, response: Response, db: Session = Depends(database.get_db),
                       current_user: int = Depends(oauth2.get_current_user)):
     
-    post = db.query(models.Post).filter(models.Post.id==id).first()
-    
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")) \
+                    .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True) \
+                    .group_by(models.Post.id) \
+                    .order_by(models.Post.id) \
+                    .filter(models.Post.id==id) \
+                    .first()
+        
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {id} was not found")
     
